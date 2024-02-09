@@ -1,4 +1,10 @@
 #!/usr/bin/env elixir
 
-input = IO.gets("Enter something> ")
-IO.puts("You entered: #{input}")
+defmodule Game do
+  def main() do
+    input = IO.gets("Enter something> ")
+    IO.puts("You entered: #{input}")
+  end
+end
+
+Game.main()
