@@ -5,17 +5,27 @@ defmodule Game do
     loop(%{})
   end
 
-  defp loop(%{input: "quit"}) do
+  defp loop(%{command: "quit"}) do
     exit(:normal)
   end
 
   defp loop(state) do
-    input = IO.gets("Enter something> ") |> String.trim()
-    IO.puts("You entered: #{input}")
+    # {range in nautical miles}
+    missile = {100}
 
-    new_state = Map.put(state, :input, input)
+    state_with_missile = Map.put(state, :missile, missile)
 
-    loop(new_state)
+    case Map.fetch(state_with_missile, :missile) do
+      {:ok, {range}} -> IO.puts("Missile approaching. #{range}NM")
+      :error -> nil
+    end
+
+    command = IO.gets("Enter something> ") |> String.trim()
+    IO.puts("You entered: #{command}")
+
+    state_with_command = Map.put(state_with_missile, :command, command)
+
+    loop(state_with_command)
   end
 end
 
