@@ -15,8 +15,20 @@ defmodule Game do
   end
 
   defp loop(state) do
-    # Spawn missile if it doesn't already exist
-    state_with_missile = cond do
+    state_with_missile = spawn_missile(state)
+
+    report(state_with_missile)
+
+    state_with_command = prompt(state_with_missile)
+
+    processed_state = process_turn(state_with_command)
+
+    loop(processed_state)
+  end
+
+  # Spawn missile if it doesn't already exist
+  defp spawn_missile(state) do
+    cond do
       Map.has_key?(state, :missile) ->
         state
       true ->
@@ -24,30 +36,32 @@ defmodule Game do
         # speed is how many nautical miles the missile travels in a single game turn.
         Map.put(state, :missile, %{range: 100, speed: 20})
     end
+  end
 
-    # report
-    case Map.fetch(state_with_missile, :missile) do
+  defp report(state) do
+    case Map.fetch(state, :missile) do
       {:ok, %{range: range}} -> IO.puts("Missile approaching. #{range}NM")
       :error -> nil
     end
+  end
 
-    # prompt
+  defp prompt(state) do
     command = IO.gets("Enter command> ") |> String.trim()
     IO.puts("You entered: #{command}")
-    state_with_command = Map.put(state_with_missile, :command, command)
 
-    # process
-    processed_state = case Map.fetch(state_with_command, :missile) do
+    Map.put(state, :command, command)
+  end
+
+  defp process_turn(state) do
+    case Map.fetch(state, :missile) do
       {:ok, %{range: 0}} ->
-        %{state_with_command | ship: :hit}
+        %{state | ship: :hit}
       {:ok, missile} ->
         new_range = missile[:range] - missile[:speed]
-        %{state_with_command | missile: %{range: new_range, speed: missile[:speed]}}
+        %{state | missile: %{range: new_range, speed: missile[:speed]}}
       :error ->
-        state_with_command
+        state
     end
-
-    loop(processed_state)
   end
 end
 
