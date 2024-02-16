@@ -5,6 +5,10 @@ defmodule Game do
     loop(%{ship: :normal})
   end
 
+  defp loop(state = %{command: "skip"}) do
+    loop(%{state | command: ""})
+  end
+
   defp loop(%{command: "quit"}) do
     exit(:normal)
   end
