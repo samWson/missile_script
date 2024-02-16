@@ -10,23 +10,37 @@ defmodule Game do
   end
 
   defp loop(state) do
-    # range in nautical miles from target (Players own ship position).
-    # speed is how many nautical miles the missile travels in a single game turn.
-    missile = %{range: 100, speed: 20}
+    # Spawn missile if it doesn't already exist
+    state_with_missile = cond do
+      Map.has_key?(state, :missile) ->
+        state
+      true ->
+        # range in nautical miles from target (Players own ship position).
+        # speed is how many nautical miles the missile travels in a single game turn.
+        Map.put(state, :missile, %{range: 100, speed: 20})
+    end
 
-    state_with_missile = Map.put(state, :missile, missile)
-
+    # report
     case Map.fetch(state_with_missile, :missile) do
       {:ok, %{range: range}} -> IO.puts("Missile approaching. #{range}NM")
       :error -> nil
     end
 
-    command = IO.gets("Enter something> ") |> String.trim()
+    # prompt
+    command = IO.gets("Enter command> ") |> String.trim()
     IO.puts("You entered: #{command}")
-
     state_with_command = Map.put(state_with_missile, :command, command)
 
-    loop(state_with_command)
+    # process
+    processed_state = case Map.fetch(state_with_command, :missile) do
+      {:ok, missile} ->
+        new_range = missile[:range] - missile[:speed]
+        %{state_with_command | missile: %{range: new_range, speed: missile[:speed]}}
+      :error ->
+        state_with_command
+    end
+
+    loop(processed_state)
   end
 end
 
