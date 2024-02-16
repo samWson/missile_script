@@ -15,15 +15,12 @@ defmodule Game do
   end
 
   defp loop(state) do
-    state_with_missile = spawn_missile(state)
-
-    report(state_with_missile)
-
-    state_with_command = prompt(state_with_missile)
-
-    processed_state = process_turn(state_with_command)
-
-    loop(processed_state)
+    state
+    |> spawn_missile()
+    |> report()
+    |> prompt()
+    |> process_turn()
+    |> loop()
   end
 
   # Spawn missile if it doesn't already exist
@@ -40,8 +37,11 @@ defmodule Game do
 
   defp report(state) do
     case Map.fetch(state, :missile) do
-      {:ok, %{range: range}} -> IO.puts("Missile approaching. #{range}NM")
-      :error -> nil
+      {:ok, %{range: range}} ->
+        IO.puts("Missile approaching. #{range}NM")
+        state
+      :error ->
+        state
     end
   end
 
