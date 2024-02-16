@@ -2,10 +2,15 @@
 
 defmodule Game do
   def main() do
-    loop(%{})
+    loop(%{ship: :normal})
   end
 
   defp loop(%{command: "quit"}) do
+    exit(:normal)
+  end
+
+  defp loop(%{ship: :hit}) do
+    IO.puts("Missile hit ship. Game over.")
     exit(:normal)
   end
 
@@ -33,6 +38,8 @@ defmodule Game do
 
     # process
     processed_state = case Map.fetch(state_with_command, :missile) do
+      {:ok, %{range: 0}} ->
+        %{state_with_command | ship: :hit}
       {:ok, missile} ->
         new_range = missile[:range] - missile[:speed]
         %{state_with_command | missile: %{range: new_range, speed: missile[:speed]}}
