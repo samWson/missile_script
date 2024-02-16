@@ -10,13 +10,14 @@ defmodule Game do
   end
 
   defp loop(state) do
-    # {range in nautical miles}
-    missile = {100}
+    # range in nautical miles from target (Players own ship position).
+    # speed is how many nautical miles the missile travels in a single game turn.
+    missile = %{range: 100, speed: 20}
 
     state_with_missile = Map.put(state, :missile, missile)
 
     case Map.fetch(state_with_missile, :missile) do
-      {:ok, {range}} -> IO.puts("Missile approaching. #{range}NM")
+      {:ok, %{range: range}} -> IO.puts("Missile approaching. #{range}NM")
       :error -> nil
     end
 
