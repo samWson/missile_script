@@ -5,12 +5,20 @@ defmodule Game do
     loop(%{ship: :normal})
   end
 
-  defp loop(state = %{command: "skip"}) do
-    loop(%{state | command: ""})
+  defp loop(state = %{command: "launch interceptor"}) do
+    # An interceptor behaves like a missile but starts at the ship (range 0) and
+    # flies toward the incoming missile (range increases each turn).
+    new_state = Map.put(state, :interceptor, %{range: 0, speed: 40})
+
+    loop(%{new_state | command: ""})
   end
 
   defp loop(%{command: "quit"}) do
     exit(:normal)
+  end
+
+  defp loop(state = %{command: "skip"}) do
+    loop(%{state | command: ""})
   end
 
   defp loop(%{ship: :hit}) do
@@ -42,11 +50,21 @@ defmodule Game do
   defp report(state) do
     case Map.fetch(state, :missile) do
       {:ok, %{range: range}} ->
-        IO.puts("Missile approaching. #{range}NM")
+        IO.puts("Missile approaching: #{range}NM")
         state
       :error ->
         state
     end
+
+    case Map.fetch(state, :interceptor) do
+      {:ok, %{range: range}} ->
+        IO.puts("Inteceptor outgoing: #{range}NM")
+        state
+      :error ->
+        state
+    end
+
+    state
   end
 
   defp prompt(state) do
@@ -57,7 +75,7 @@ defmodule Game do
   end
 
   defp process_turn(state) do
-    case Map.fetch(state, :missile) do
+    new_state = case Map.fetch(state, :missile) do
       {:ok, %{range: 0}} ->
         %{state | ship: :hit}
       {:ok, missile} ->
@@ -65,6 +83,14 @@ defmodule Game do
         %{state | missile: %{range: new_range, speed: missile[:speed]}}
       :error ->
         state
+    end
+
+    case Map.fetch(new_state, :interceptor) do
+      {:ok, interceptor} ->
+        new_range = interceptor[:range] + interceptor[:speed]
+        %{new_state | interceptor: %{range: new_range, speed: interceptor[:speed]}}
+      :error ->
+        new_state
     end
   end
 end
