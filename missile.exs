@@ -8,7 +8,7 @@ defmodule Game do
   defp loop(state = %{command: "launch interceptor"}) do
     # An interceptor behaves like a missile but starts at the ship (range 0) and
     # flies toward the incoming missile (range increases each turn).
-    new_state = Map.put(state, :interceptor, %{range: 0, speed: 40})
+    new_state = Map.put(state, :interceptor, %{range: 0, speed: 40, state: :normal})
 
     loop(%{new_state | command: ""})
   end
@@ -43,12 +43,15 @@ defmodule Game do
       true ->
         # range in nautical miles from target (Players own ship position).
         # speed is how many nautical miles the missile travels in a single game turn.
-        Map.put(state, :missile, %{range: 100, speed: 20})
+        Map.put(state, :missile, %{range: 100, speed: 20, state: :normal})
     end
   end
 
   defp report(state) do
     case Map.fetch(state, :missile) do
+      {:ok, %{state: :hit}} ->
+        IO.puts("Missile destroyed")
+        state
       {:ok, %{range: range}} ->
         IO.puts("Missile approaching: #{range}NM")
         state
@@ -57,6 +60,8 @@ defmodule Game do
     end
 
     case Map.fetch(state, :interceptor) do
+      {:ok, %{state: :hit}} ->
+        state
       {:ok, %{range: range}} ->
         IO.puts("Inteceptor outgoing: #{range}NM")
         state
@@ -80,17 +85,35 @@ defmodule Game do
         %{state | ship: :hit}
       {:ok, missile} ->
         new_range = missile[:range] - missile[:speed]
-        %{state | missile: %{range: new_range, speed: missile[:speed]}}
+        %{state | missile: %{range: new_range, speed: missile[:speed], state: :normal}}
       :error ->
         state
     end
 
-    case Map.fetch(new_state, :interceptor) do
+    final_state = case Map.fetch(new_state, :interceptor) do
       {:ok, interceptor} ->
         new_range = interceptor[:range] + interceptor[:speed]
-        %{new_state | interceptor: %{range: new_range, speed: interceptor[:speed]}}
+        %{new_state | interceptor: %{range: new_range, speed: interceptor[:speed], state: :normal}}
       :error ->
         new_state
+    end
+
+    missile = Map.get(final_state, :missile)
+    interceptor = Map.get(final_state, :interceptor)
+
+    cond do
+      is_nil(missile) ->
+        final_state
+      is_nil(interceptor) ->
+        final_state
+      missile[:range] > interceptor[:range] ->
+        final_state
+      missile[:range] <= interceptor[:range] ->
+        updated_missile = %{missile | state: :hit}
+        updated_interceptor = %{interceptor | state: :hit}
+        %{final_state | missile: updated_missile, interceptor: updated_interceptor}
+      true ->
+        final_state
     end
   end
 end
