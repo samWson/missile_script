@@ -5,6 +5,26 @@ defmodule Missile do
   # speed is how many nautical miles the missile travels in a single game turn.
   defstruct range: 0, speed: 20, state: :normal
   @type t :: %__MODULE__{range: non_neg_integer(), speed: non_neg_integer(), state: atom()}
+
+  def decrease_range(missile) do
+    new_range = missile.range - missile.speed
+
+    %Missile{missile | range: new_range}
+  end
+
+  def increase_range(missile) do
+    new_range = missile.range + missile.speed
+
+    %Missile{missile | range: new_range}
+  end
+
+  def intercepted?(missile, interceptor) do
+    missile.range <= interceptor.range
+  end
+
+  def state_hit(missile) do
+    %Missile{missile | state: :hit}
+  end
 end
 
 defmodule Game do
@@ -89,16 +109,14 @@ defmodule Game do
       {:ok, %{range: 0}} ->
         %{state | ship: :hit}
       {:ok, missile} ->
-        new_range = missile.range - missile.speed
-        %{state | missile: %Missile{range: new_range, speed: missile.speed}}
+        %{state | missile: Missile.decrease_range(missile)}
       :error ->
         state
     end
 
     final_state = case Map.fetch(new_state, :interceptor) do
       {:ok, interceptor} ->
-        new_range = interceptor.range + interceptor.speed
-        %{new_state | interceptor: %Missile{range: new_range, speed: interceptor.speed}}
+        %{new_state | interceptor: Missile.increase_range(interceptor)}
       :error ->
         new_state
     end
@@ -111,12 +129,8 @@ defmodule Game do
         final_state
       is_nil(interceptor) ->
         final_state
-      missile.range > interceptor.range ->
-        final_state
-      missile.range <= interceptor.range ->
-        updated_missile = %Missile{missile | state: :hit}
-        updated_interceptor = %Missile{interceptor | state: :hit}
-        %{final_state | missile: updated_missile, interceptor: updated_interceptor}
+      Missile.intercepted?(missile, interceptor) ->
+        %{final_state | missile: Missile.state_hit(missile), interceptor: Missile.state_hit(interceptor)}
       true ->
         final_state
     end
