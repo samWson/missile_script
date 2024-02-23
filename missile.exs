@@ -1,5 +1,12 @@
 #!/usr/bin/env elixir
 
+defmodule Missile do
+  # range in nautical miles from target (Players own ship position).
+  # speed is how many nautical miles the missile travels in a single game turn.
+  defstruct range: 0, speed: 20, state: :normal
+  @type t :: %__MODULE__{range: non_neg_integer(), speed: non_neg_integer(), state: atom()}
+end
+
 defmodule Game do
   def main() do
     loop(%{ship: :normal})
@@ -8,7 +15,7 @@ defmodule Game do
   defp loop(state = %{command: "launch interceptor"}) do
     # An interceptor behaves like a missile but starts at the ship (range 0) and
     # flies toward the incoming missile (range increases each turn).
-    new_state = Map.put(state, :interceptor, %{range: 0, speed: 40, state: :normal})
+    new_state = Map.put(state, :interceptor, %Missile{speed: 40})
 
     loop(%{new_state | command: ""})
   end
@@ -41,9 +48,7 @@ defmodule Game do
       Map.has_key?(state, :missile) ->
         state
       true ->
-        # range in nautical miles from target (Players own ship position).
-        # speed is how many nautical miles the missile travels in a single game turn.
-        Map.put(state, :missile, %{range: 100, speed: 20, state: :normal})
+        Map.put(state, :missile, %Missile{range: 100})
     end
   end
 
@@ -84,16 +89,16 @@ defmodule Game do
       {:ok, %{range: 0}} ->
         %{state | ship: :hit}
       {:ok, missile} ->
-        new_range = missile[:range] - missile[:speed]
-        %{state | missile: %{range: new_range, speed: missile[:speed], state: :normal}}
+        new_range = missile.range - missile.speed
+        %{state | missile: %Missile{range: new_range, speed: missile.speed}}
       :error ->
         state
     end
 
     final_state = case Map.fetch(new_state, :interceptor) do
       {:ok, interceptor} ->
-        new_range = interceptor[:range] + interceptor[:speed]
-        %{new_state | interceptor: %{range: new_range, speed: interceptor[:speed], state: :normal}}
+        new_range = interceptor.range + interceptor.speed
+        %{new_state | interceptor: %Missile{range: new_range, speed: interceptor.speed}}
       :error ->
         new_state
     end
@@ -106,11 +111,11 @@ defmodule Game do
         final_state
       is_nil(interceptor) ->
         final_state
-      missile[:range] > interceptor[:range] ->
+      missile.range > interceptor.range ->
         final_state
-      missile[:range] <= interceptor[:range] ->
-        updated_missile = %{missile | state: :hit}
-        updated_interceptor = %{interceptor | state: :hit}
+      missile.range <= interceptor.range ->
+        updated_missile = %Missile{missile | state: :hit}
+        updated_interceptor = %Missile{interceptor | state: :hit}
         %{final_state | missile: updated_missile, interceptor: updated_interceptor}
       true ->
         final_state
