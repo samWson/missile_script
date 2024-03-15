@@ -32,6 +32,18 @@ defmodule Game do
     loop(%{ship: :normal})
   end
 
+  defp loop(state = %{command: "help"}) do
+    IO.puts("""
+      help\t\tShow this menu
+      quit\t\tExit the game
+      skip\t\tDo nothing this turn
+      launch interceptor\tShoot down incoming missile with interceptor
+      """
+      )
+
+    loop(%{state | command: ""})
+  end
+
   defp loop(state = %{command: "launch interceptor"}) do
     # An interceptor behaves like a missile but starts at the ship (range 0) and
     # flies toward the incoming missile (range increases each turn).
